@@ -8,6 +8,7 @@ if ($restartingInstance) {
     # database volume path is provided, check if the database is already there or not
 
     if ((Get-Item -path $volPath).GetFileSystemInfos().Count -eq 0) {
+        Write-Host "Executing default script"
         # setup database with default script independent of multitenant, bak, bacpac etc.
         . (Join-Path $runPath $MyInvocation.MyCommand.Name)
         
