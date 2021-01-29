@@ -1,3 +1,6 @@
+# setup database with default script independent of multitenant, bak, bacpac etc.
+. (Join-Path $runPath $MyInvocation.MyCommand.Name)
+
 $volPath = "$env:volPath"
 
 if ($restartingInstance) {
@@ -62,7 +65,4 @@ if ($restartingInstance) {
         $sqlcmd = "CREATE DATABASE $databaseName ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
         & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
     }
-} else {
-    # invoke default
-    . (Join-Path $runPath $MyInvocation.MyCommand.Name)
 }
