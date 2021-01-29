@@ -14,6 +14,7 @@ if ($restartingInstance) {
         
         # folder is empty, try to move the existing database to the db volume path
         Write-Host "Move database to volume"
+        throw "pause"
 
         [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
 
