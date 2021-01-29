@@ -1,6 +1,3 @@
-# setup database with default script independent of multitenant, bak, bacpac etc.
-. (Join-Path $runPath $MyInvocation.MyCommand.Name)
-
 $volPath = "$env:volPath"
 
 if ($restartingInstance) {
@@ -11,6 +8,9 @@ if ($restartingInstance) {
     # database volume path is provided, check if the database is already there or not
 
     if ((Get-Item -path $volPath).GetFileSystemInfos().Count -eq 0) {
+        # setup database with default script independent of multitenant, bak, bacpac etc.
+        . (Join-Path $runPath $MyInvocation.MyCommand.Name)
+        
         # folder is empty, try to move the existing database to the db volume path
         Write-Host "Move database to volume"
 
@@ -65,4 +65,6 @@ if ($restartingInstance) {
         $sqlcmd = "CREATE DATABASE $databaseName ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
         & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
     }
+} else {
+    . (Join-Path $runPath $MyInvocation.MyCommand.Name)
 }
