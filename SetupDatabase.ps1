@@ -24,7 +24,7 @@ if ($restartingInstance) {
         $sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
 
         $smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
-        $dbs = New-Object Collections.Generic.List
+        $dbs = New-Object Collections.Generic.List[object]
         
         foreach ($db in $smo.Databases) {
             $dbs.Add($db)
