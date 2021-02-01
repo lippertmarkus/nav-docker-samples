@@ -1,72 +1,71 @@
-$volPath = "$env:volPath"
+$volPath = "C:\DatabaseVol"
 
-if ($restartingInstance) {
+[reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
 
-    # Nothing to do
+[reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Common") | Out-Null
 
-} elseif ($volPath -ne "") {
-    # database volume path is provided, check if the database is already there or not
+$dummy = new-object Microsoft.SqlServer.Management.SMO.Server
 
-    if ((Get-Item -path $volPath).GetFileSystemInfos().Count -eq 0) {
-        Write-Host "Executing default script"
-        # setup database with default script independent of multitenant, bak, bacpac etc.
-        . (Join-Path $runPath $MyInvocation.MyCommand.Name)
-        
-        # folder is empty, try to move the existing database to the db volume path
-        Write-Host "Move database to volume"
-        throw "pause"
+$sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
 
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
+$smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
+$dbs = New-Object Collections.Generic.List[object]
 
-        [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Common") | Out-Null
-
-        $dummy = new-object Microsoft.SqlServer.Management.SMO.Server
-
-        $sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
-
-        $toCopy = @()
-
-        $smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
-        $smo.Databases | ForEach-Object {
-            if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb') {
-                $dbPath = Join-Path -Path $volPath -ChildPath $_.Name
-                mkdir $dbPath | Out-Null
-                $_.FileGroups | ForEach-Object {
-                    $_.Files | ForEach-Object {
-                        $destination = (Join-Path -Path $dbPath -ChildPath ($_.Name + '.' +  $_.FileName.SubString($_.FileName.LastIndexOf('.') + 1)))
-                        $toCopy += ,@($_.FileName, $destination)
-                        $_.FileName = $destination
-                    } 
-                }
-                $_.LogFiles | ForEach-Object {
-                    $destination = (Join-Path -Path $dbPath -ChildPath ($_.Name + '.' +  $_.FileName.SubString($_.FileName.LastIndexOf('.') + 1)))
-                    $toCopy += ,@($_.FileName, $destination)
-                    $_.FileName = $destination
-                }
-
-                $_.Alter()
-                $_.SetOffline()
-
-                $toCopy | ForEach-Object {
-                    Move-Item -Path $_[0] -Destination $_[1]
-                }
-                $_.SetOnline()
-            }
-        }
-        $smo.ConnectionContext.Disconnect()
-    } else {
-        # folder is not empty, attach the database
-        Write-Host "Attach database $databaseName"
-
-        $sqlcmd = "DROP DATABASE IF EXISTS $databaseName"
-        & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
-
-        $dbPath = (Join-Path $volPath $databaseName)
-        $files = Get-ChildItem $dbPath -File
-        $joinedFiles = $files.Name -join "'), (FILENAME = '$dbPath\"
-        $sqlcmd = "CREATE DATABASE $databaseName ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
-        & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
-    }
-} else {
-    . (Join-Path $runPath $MyInvocation.MyCommand.Name)
+foreach ($odb in $smo.Databases) {
+    $dbs.Add($odb)
 }
+
+$tenantDb = $dbs | where Name -eq "tenant"
+
+if ($tenantDb) {
+    $dbs.Remove($tenantDb)
+    $dbs.Insert(0, $tenantDb)
+}
+
+$dbs | ForEach-Object {
+    if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'default') {
+        $toCopy = @()
+        $dbPath = Join-Path -Path $volPath -ChildPath $_.Name
+        mkdir $dbPath -Force | Out-Null
+
+        write-host "name: $($_.Name)"
+
+        $_.FileGroups | ForEach-Object {
+            $_.Files | ForEach-Object {
+                $destination = (Join-Path -Path $dbPath -ChildPath ($_.Name + '.' +  $_.FileName.SubString($_.FileName.LastIndexOf('.') + 1)))
+                $toCopy += ,@($_.FileName, $destination)
+                $_.FileName = $destination
+                write-host "dest: $destination"
+            } 
+        }
+        $_.LogFiles | ForEach-Object {
+            $destination = (Join-Path -Path $dbPath -ChildPath ($_.Name + '.' +  $_.FileName.SubString($_.FileName.LastIndexOf('.') + 1)))
+            $toCopy += ,@($_.FileName, $destination)
+            $_.FileName = $destination
+            write-host "log dest: $destination"
+        }
+
+        $_.Alter()
+        $_.SetOffline()
+
+        if ($_.Name -ne "tenant") {
+            write-host "tocopy"
+            $toCopy
+
+            $toCopy | ForEach-Object {
+                Write-Host "COPY"
+                Move-Item -Path $_[0] -Destination $_[1] -Force
+            }
+   
+            $_.SetOnline()
+        }
+
+        Write-host "-----------"
+    }
+}
+
+if ($tenantDb) {
+    $tenantDb.SetOnline();
+}
+
+$smo.ConnectionContext.Disconnect()
