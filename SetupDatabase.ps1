@@ -1,4 +1,4 @@
-$volPath = "C:\DatabaseVol"
+$volPath = "C:\DatabasesVol"
 
 [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
 
@@ -17,10 +17,10 @@ foreach ($odb in $smo.Databases) {
 
 $tenantDb = $dbs | where Name -eq "tenant"
 
-if ($tenantDb) {
-    $dbs.Remove($tenantDb)
-    $dbs.Insert(0, $tenantDb)
-}
+#if ($tenantDb) {
+#    $dbs.Remove($tenantDb)
+#    $dbs.Insert(0, $tenantDb)
+#}
 
 $dbs | ForEach-Object {
     if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'default') {
