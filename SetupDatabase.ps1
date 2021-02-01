@@ -54,17 +54,21 @@ if ($restartingInstance) {
         }
         $smo.ConnectionContext.Disconnect()
     } else {
-        # folder is not empty, attach the database
-        Write-Host "Attach database $databaseName"
+        $databases = (Get-ChildItem $volPath -Directory).BaseName
 
-        $sqlcmd = "DROP DATABASE IF EXISTS $databaseName"
-        & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+        foreach ($database in $databases) {
+            # folder is not empty, attach the database
+            Write-Host "Attach database $database"
 
-        $dbPath = (Join-Path $volPath $databaseName)
-        $files = Get-ChildItem $dbPath -File
-        $joinedFiles = $files.Name -join "'), (FILENAME = '$dbPath\"
-        $sqlcmd = "CREATE DATABASE $databaseName ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
-        & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+            $sqlcmd = "DROP DATABASE IF EXISTS $database"
+            & sqlcmd -Q $sqlcmd
+
+            $dbPath = (Join-Path $volPath $database)
+            $files = Get-ChildItem $dbPath -File
+            $joinedFiles = $files.Name -join "'), (FILENAME = '$dbPath\"
+            $sqlcmd = "CREATE DATABASE $database ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
+            & sqlcmd -Q $sqlcmd
+        }
     }
 } else {
     # invoke default
