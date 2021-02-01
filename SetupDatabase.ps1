@@ -24,7 +24,10 @@ if ($restartingInstance) {
         $sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
 
         $smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
-        $smo.Databases | ForEach-Object {
+        $dbs = $smo.Databases
+        $tenantDb = $dbs | where Name -eq "tenant"
+        
+        $dbs | ForEach-Object {
             if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'default') {
                 Write-Host "Moving $($_.Name)"
                 $toCopy = @()
@@ -49,9 +52,17 @@ if ($restartingInstance) {
                 $toCopy | ForEach-Object {
                     Move-Item -Path $_[0] -Destination $_[1]
                 }
-                $_.SetOnline()
+                
+                if ($_.Name -ne 'tenant') {
+                    $_.SetOnline()
+                }
             }
         }
+        
+        if ($tenantDb) {
+            $tenantDb.SetOnline();
+        }
+        
         $smo.ConnectionContext.Disconnect()
     } else {
         $databases = (Get-ChildItem $volPath -Directory).BaseName
