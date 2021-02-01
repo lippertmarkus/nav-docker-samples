@@ -24,8 +24,18 @@ if ($restartingInstance) {
         $sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
 
         $smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
-        $dbs = $smo.Databases
+        $dbs = New-Object Collections.Generic.List
+        
+        foreach ($db in $smo.Databases) {
+            $dbs.Add($db)
+        }
+        
         $tenantDb = $dbs | where Name -eq "tenant"
+        
+        if ($tenantDb) {
+            $dbs.Remove($tenantDb)
+            $dbs.Insert(0, $tenantDb)
+        }
         
         $dbs | ForEach-Object {
             if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'default') {
