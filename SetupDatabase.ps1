@@ -82,7 +82,7 @@ if ($restartingInstance) {
             # folder is not empty, attach the database
             Write-Host "Attach database $database"
 
-            $sqlcmd = "DROP DATABASE IF EXISTS $database"
+            $sqlcmd = "DROP DATABASE IF EXISTS [$database]"
             & sqlcmd -Q $sqlcmd
 
             $dbPath = (Join-Path $volPath $database)
