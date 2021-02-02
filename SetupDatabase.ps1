@@ -88,7 +88,7 @@ if ($restartingInstance) {
             $dbPath = (Join-Path $volPath $database)
             $files = Get-ChildItem $dbPath -File
             $joinedFiles = $files.Name -join "'), (FILENAME = '$dbPath\"
-            $sqlcmd = "CREATE DATABASE $database ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
+            $sqlcmd = "CREATE DATABASE [$database] ON (FILENAME = '$dbPath\$joinedFiles') FOR ATTACH;"
             & sqlcmd -Q $sqlcmd
         }
     }
