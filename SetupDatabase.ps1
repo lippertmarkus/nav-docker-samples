@@ -10,10 +10,10 @@ if ($restartingInstance) {
     if ((Get-Item -path $volPath).GetFileSystemInfos().Count -eq 0) {
         # folder is empty, try to move the existing database to the db volume path
 
-        Write-Host "Running default script"
+        Write-Host "Setting up database with default script"
         . (Join-Path $runPath $MyInvocation.MyCommand.Name)
 
-        Write-Host "Move database to volume"
+        Write-Host "Move databases to volume"
 
         [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
 
@@ -33,13 +33,14 @@ if ($restartingInstance) {
         $tenantDb = $dbs | where Name -eq "tenant"
         
         if ($tenantDb) {
+            # on multitenant we need to move tenant db first and keep it offline until all databases are moved
             $dbs.Remove($tenantDb)
             $dbs.Insert(0, $tenantDb)
         }
         
         $dbs | ForEach-Object {
-            if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'default') {
-                Write-Host "Moving $($_.Name)"
+            if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb') {
+                Write-Host "- Moving $($_.Name)"
                 $toCopy = @()
                 $dbPath = Join-Path -Path $volPath -ChildPath $_.Name
                 mkdir $dbPath | Out-Null
