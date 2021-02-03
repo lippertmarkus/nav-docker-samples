@@ -24,9 +24,29 @@ if ($restartingInstance) {
         $sqlConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
 
         $smo = new-object Microsoft.SqlServer.Management.SMO.Server($sqlConn)
+        $dbs = New-Object Collections.Generic.List[object]
         
-        $smo.Databases | ForEach-Object {
-            if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'tenant') {
+        foreach ($db in $smo.Databases) {
+            $dbs.Add($db)
+        }
+        
+        $tenantDb = $dbs | where Name -eq "tenant"
+        
+        if ($bakfile -ne "") {
+            # don't move CRONUS when we have our own BAK
+            $cronusDb = $dbs | where Name -eq "CRONUS"
+            $dbs.Remove($cronusDb)
+        }
+        
+        if ($tenantDb) {
+            # on multitenant we need to move tenant db first and keep it offline until all databases are moved
+            $tenantDb.SetOffline()
+            $dbs.Remove($tenantDb)
+            #$dbs.Insert(0, $tenantDb)
+        }
+        
+        $dbs | ForEach-Object {
+            if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb') {
                 Write-Host "- Moving $($_.Name)"
                 $toCopy = @()
                 $dbPath = Join-Path -Path $volPath -ChildPath $_.Name
@@ -51,9 +71,15 @@ if ($restartingInstance) {
                     Move-Item -Path $_[0] -Destination $_[1]
                 }
                 
-                $_.SetOnline()
+                #if ($_.Name -ne 'tenant') {
+                    $_.SetOnline()
+                #}
             }
         }
+        
+        #if ($tenantDb) {
+            #$tenantDb.SetOnline();
+        #}
         
         $smo.ConnectionContext.Disconnect()
     } else {
