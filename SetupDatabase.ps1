@@ -45,7 +45,12 @@ if ($restartingInstance) {
                 }
 
                 $_.Alter()
-                $_.SetOffline()
+                try {
+                    $_.SetOffline()
+                } catch {
+                    write-host "set offline faiiled"
+                    $_
+                }
 
                 $toCopy | ForEach-Object {
                     Move-Item -Path $_[0] -Destination $_[1]
