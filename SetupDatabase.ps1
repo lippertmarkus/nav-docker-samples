@@ -48,8 +48,7 @@ if ($restartingInstance) {
                 try {
                     $_.SetOffline()
                 } catch {
-                    write-host "set offline faiiled"
-                    $_
+                    # ignore
                 }
 
                 $toCopy | ForEach-Object {
