@@ -40,9 +40,9 @@ if ($restartingInstance) {
         
         if ($tenantDb) {
             # on multitenant we need to move tenant db first and keep it offline until all databases are moved
-            $tenantDb.SetOffline()
+            #$tenantDb.SetOffline()
             $dbs.Remove($tenantDb)
-            #$dbs.Insert(0, $tenantDb)
+            $dbs.Insert(0, $tenantDb)
         }
         
         $dbs | ForEach-Object {
@@ -67,13 +67,13 @@ if ($restartingInstance) {
                 $_.Alter()
                 $_.SetOffline()
 
-                $toCopy | ForEach-Object {
-                    Move-Item -Path $_[0] -Destination $_[1]
-                }
-                
-                #if ($_.Name -ne 'tenant') {
+                if ($_.Name -ne 'tenant') {
+                    $toCopy | ForEach-Object {
+                        Move-Item -Path $_[0] -Destination $_[1]
+                    }
+                            
                     $_.SetOnline()
-                #}
+                }
             }
         }
         
