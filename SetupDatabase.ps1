@@ -44,13 +44,13 @@ if ($restartingInstance) {
                     $_.FileName = $destination
                 }
 
+                $_.Alter()
                 $_.SetOffline()
 
                 $toCopy | ForEach-Object {
                     Move-Item -Path $_[0] -Destination $_[1]
                 }
                 
-                $_.Alter()
                 $_.SetOnline()
             }
         }
