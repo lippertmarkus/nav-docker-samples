@@ -13,6 +13,7 @@ if ($restartingInstance) {
         Write-Host "Setting up database with default script"
         . (Join-Path $runPath $MyInvocation.MyCommand.Name)
 
+        Start-Sleep -Seconds 30
         Write-Host "Move databases to volume"
 
         [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.Smo") | Out-Null
