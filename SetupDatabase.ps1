@@ -27,6 +27,10 @@ if ($restartingInstance) {
         
         $smo.Databases | ForEach-Object {
             if ($_.Name -ne 'master' -and $_.Name -ne 'model' -and $_.Name -ne 'msdb' -and $_.Name -ne 'tempdb' -and $_.Name -ne 'tenant') {
+                if (($bakfile -ne "") -and $_.Name -eq 'CRONUS') {
+                    return; # don't restore CRONUS if we have provided our own bak
+                }
+            
                 Write-Host "- Moving $($_.Name)"
                 $toCopy = @()
                 $dbPath = Join-Path -Path $volPath -ChildPath $_.Name
