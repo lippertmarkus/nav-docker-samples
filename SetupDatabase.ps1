@@ -44,7 +44,7 @@ if ($restartingInstance) {
             $tenantDb = $dbs | where Name -eq "tenant"
             $dbs.Remove($defaultDb)
             $dbs.Remove($tenantDb)
-            #$tenantDb.SetOffline()
+            $tenantDb.SetOffline()
             $dbs.Insert(0, $defaultDb)
         }
         
