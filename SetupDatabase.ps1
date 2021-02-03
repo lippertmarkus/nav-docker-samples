@@ -30,7 +30,8 @@ if ($restartingInstance) {
             $dbs.Add($db)
         }
         
-        $tenantDb = $dbs | where Name -eq "tenant"
+        $defaultDb = $dbs | where Name -eq "default"
+        
         
         if ($bakfile -ne "") {
             # don't move CRONUS when we have our own BAK
@@ -38,11 +39,13 @@ if ($restartingInstance) {
             $dbs.Remove($cronusDb)
         }
         
-        if ($tenantDb) {
-            # on multitenant we need to move tenant db first and keep it offline until all databases are moved
-            #$tenantDb.SetOffline()
+        if ($defaultDb) {
+            # on multitenant we need to move default db first and keep it offline until all databases are moved
+            $tenantDb = $dbs | where Name -eq "tenant"
+            $dbs.Remove($defaultDb)
             $dbs.Remove($tenantDb)
-            $dbs.Insert(0, $tenantDb)
+            #$tenantDb.SetOffline()
+            $dbs.Insert(0, $defaultDb)
         }
         
         $dbs | ForEach-Object {
@@ -67,19 +70,19 @@ if ($restartingInstance) {
                 $_.Alter()
                 $_.SetOffline()
 
-                if ($_.Name -ne 'tenant') {
-                    $toCopy | ForEach-Object {
-                        Move-Item -Path $_[0] -Destination $_[1]
-                    }
-                            
+                $toCopy | ForEach-Object {
+                    Move-Item -Path $_[0] -Destination $_[1]
+                }
+                
+                if ($_.Name -ne 'default') {
                     $_.SetOnline()
                 }
             }
         }
         
-        #if ($tenantDb) {
-            #$tenantDb.SetOnline();
-        #}
+        if ($defaultDb) {
+            $defaultDb.SetOnline();
+        }
         
         $smo.ConnectionContext.Disconnect()
     } else {
