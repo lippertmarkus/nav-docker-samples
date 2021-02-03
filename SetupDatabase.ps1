@@ -45,7 +45,7 @@ if ($restartingInstance) {
                 }
 
                 $_.Alter()
-                Start-Sleep -Seconds 10
+                $_.SetOnline()
                 $_.SetOffline()
 
                 $toCopy | ForEach-Object {
