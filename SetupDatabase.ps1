@@ -50,11 +50,12 @@ if ($restartingInstance) {
 
                 $_.Alter()
                 try {
+                    $db = $_
                     $_.SetOffline()
                 } catch {
-                    $_.Refresh()
-                    if ($_.Status -ne "Offline") {
-                        Write-Warning "Database $($_.Name) is not offline!"
+                    $db.Refresh()
+                    if ($db.Status -ne "Offline") {
+                        Write-Warning "Database $($db.Name) is not offline!"
                     }
                 }
 
