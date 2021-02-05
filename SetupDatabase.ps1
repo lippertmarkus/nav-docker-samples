@@ -52,7 +52,10 @@ if ($restartingInstance) {
                 try {
                     $_.SetOffline()
                 } catch {
-                    # ignore
+                    $_.Refresh()
+                    if ($_.Status -ne "Offline") {
+                        Write-Warning "Database $($_.Name) is not offline!"
+                    }
                 }
 
                 $toCopy | ForEach-Object {
